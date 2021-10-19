@@ -12,25 +12,30 @@ from .exceptions import *
 from .instaloadercontext import InstaloaderContext
 from .nodeiterator import FrozenNodeIterator, NodeIterator
 
-PostSidecarNode = namedtuple('PostSidecarNode', ['is_video', 'display_url', 'video_url'])
+PostSidecarNode = namedtuple(
+    'PostSidecarNode', ['is_video', 'display_url', 'video_url'])
 PostSidecarNode.__doc__ = "Item of a Sidecar Post."
 PostSidecarNode.is_video.__doc__ = "Whether this node is a video."
 PostSidecarNode.display_url.__doc__ = "URL of image or video thumbnail."
 PostSidecarNode.video_url.__doc__ = "URL of video or None."
 
-PostCommentAnswer = namedtuple('PostCommentAnswer', ['id', 'created_at_utc', 'text', 'owner', 'likes_count'])
+PostCommentAnswer = namedtuple(
+    'PostCommentAnswer', ['id', 'created_at_utc', 'text', 'owner', 'likes_count'])
 PostCommentAnswer.id.__doc__ = "ID number of comment."
 PostCommentAnswer.created_at_utc.__doc__ = ":class:`~datetime.datetime` when comment was created (UTC)."
 PostCommentAnswer.text.__doc__ = "Comment text."
 PostCommentAnswer.owner.__doc__ = "Owner :class:`Profile` of the comment."
 PostCommentAnswer.likes_count.__doc__ = "Number of likes on comment."
 
-PostComment = namedtuple('PostComment', (*PostCommentAnswer._fields, 'answers')) # type: ignore
+PostComment = namedtuple(
+    'PostComment', (*PostCommentAnswer._fields, 'answers'))  # type: ignore
 for field in PostCommentAnswer._fields:
-    getattr(PostComment, field).__doc__ = getattr(PostCommentAnswer, field).__doc__  # pylint: disable=no-member
-PostComment.answers.__doc__ = r"Iterator which yields all :class:`PostCommentAnswer`\ s for the comment." # type: ignore
+    getattr(PostComment, field).__doc__ = getattr(
+        PostCommentAnswer, field).__doc__  # pylint: disable=no-member
+PostComment.answers.__doc__ = r"Iterator which yields all :class:`PostCommentAnswer`\ s for the comment."  # type: ignore
 
-PostLocation = namedtuple('PostLocation', ['id', 'name', 'slug', 'has_public_page', 'lat', 'lng'])
+PostLocation = namedtuple(
+    'PostLocation', ['id', 'name', 'slug', 'has_public_page', 'lat', 'lng'])
 PostLocation.id.__doc__ = "ID number of location."
 PostLocation.name.__doc__ = "Location name."
 PostLocation.slug.__doc__ = "URL friendly variant of location name."
@@ -92,14 +97,16 @@ class Post:
     @staticmethod
     def shortcode_to_mediaid(code: str) -> int:
         if len(code) > 11:
-            raise InvalidArgumentException("Wrong shortcode \"{0}\", unable to convert to mediaid.".format(code))
+            raise InvalidArgumentException(
+                "Wrong shortcode \"{0}\", unable to convert to mediaid.".format(code))
         code = 'A' * (12 - len(code)) + code
         return int.from_bytes(b64decode(code.encode(), b'-_'), 'big')
 
     @staticmethod
     def mediaid_to_shortcode(mediaid: int) -> str:
         if mediaid.bit_length() > 64:
-            raise InvalidArgumentException("Wrong mediaid {0}, unable to convert to shortcode".format(str(mediaid)))
+            raise InvalidArgumentException(
+                "Wrong mediaid {0}, unable to convert to shortcode".format(str(mediaid)))
         return b64encode(mediaid.to_bytes(9, 'big'), b'-_').decode().replace('A', ' ').lstrip().replace(' ', 'A')
 
     @staticmethod
@@ -172,9 +179,11 @@ class Post:
         if not self._context.iphone_support:
             raise IPhoneSupportDisabledException("iPhone support is disabled.")
         if not self._context.is_logged_in:
-            raise LoginRequiredException("--login required to access iPhone media info endpoint.")
+            raise LoginRequiredException(
+                "--login required to access iPhone media info endpoint.")
         if not self._iphone_struct_:
-            data = self._context.get_iphone_json(path='api/v1/media/{}/info/'.format(self.mediaid), params={})
+            data = self._context.get_iphone_json(
+                path='api/v1/media/{}/info/'.format(self.mediaid), params={})
             self._iphone_struct_ = data['items'][0]
         return self._iphone_struct_
 
@@ -255,7 +264,8 @@ class Post:
                 url = re.sub(r'([?&])se=\d+&?', r'\1', orig_url).rstrip('&')
                 return url
             except (InstaloaderException, KeyError, IndexError) as err:
-                self._context.error('{} Unable to fetch high quality image version of {}.'.format(err, self))
+                self._context.error(
+                    '{} Unable to fetch high quality image version of {}.'.format(err, self))
         return self._node["display_url"] if "display_url" in self._node else self._node["display_src"]
 
     @property
@@ -311,7 +321,8 @@ class Post:
                         try:
                             carousel_media = self._iphone_struct['carousel_media']
                             orig_url = carousel_media[idx]['image_versions2']['candidates'][0]['url']
-                            display_url = re.sub(r'([?&])se=\d+&?', r'\1', orig_url).rstrip('&')
+                            display_url = re.sub(
+                                r'([?&])se=\d+&?', r'\1', orig_url).rstrip('&')
                         except (InstaloaderException, KeyError, IndexError) as err:
                             self._context.error('{} Unable to fetch high quality image version of {}.'.format(
                                 err, self))
@@ -334,7 +345,8 @@ class Post:
             return []
         # This regular expression is from jStassen, adjusted to use Python's \w to support Unicode
         # http://blog.jstassen.com/2016/03/code-regex-for-instagram-username-and-hashtags/
-        hashtag_regex = re.compile(r"(?:#)(\w(?:(?:\w|(?:\.(?!\.))){0,28}(?:\w))?)")
+        hashtag_regex = re.compile(
+            r"(?:#)(\w(?:(?:\w|(?:\.(?!\.))){0,28}(?:\w))?)")
         return re.findall(hashtag_regex, self.caption.lower())
 
     @property
@@ -346,7 +358,8 @@ class Post:
         # support Unicode and a word/beginning of string delimiter at the beginning to ensure
         # that no email addresses join the list of mentions.
         # http://blog.jstassen.com/2016/03/code-regex-for-instagram-username-and-hashtags/
-        mention_regex = re.compile(r"(?:^|\W|_)(?:@)(\w(?:(?:\w|(?:\.(?!\.))){0,28}(?:\w))?)")
+        mention_regex = re.compile(
+            r"(?:^|\W|_)(?:@)(\w(?:(?:\w|(?:\.(?!\.))){0,28}(?:\w))?)")
         return re.findall(mention_regex, self.caption.lower())
 
     @property
@@ -355,7 +368,8 @@ class Post:
 
         .. versionadded:: 4.2.6"""
         def _elliptify(caption):
-            pcaption = ' '.join([s.replace('/', '\u2215') for s in caption.splitlines() if s]).strip()
+            pcaption = ' '.join([s.replace('/', '\u2215')
+                                for s in caption.splitlines() if s]).strip()
             return (pcaption[:30] + u"\u2026") if len(pcaption) > 31 else pcaption
         return _elliptify(self.caption) if self.caption else ''
 
@@ -380,9 +394,11 @@ class Post:
             version_urls = [self._field('video_url')]
             if self._context.iphone_support and self._context.is_logged_in:
                 try:
-                    version_urls.extend(version['url'] for version in self._iphone_struct['video_versions'])
+                    version_urls.extend(
+                        version['url'] for version in self._iphone_struct['video_versions'])
                 except (InstaloaderException, KeyError, IndexError) as err:
-                    self._context.error(f"Unable to fetch high-quality video version of {self}: {err}")
+                    self._context.error(
+                        f"Unable to fetch high-quality video version of {self}: {err}")
                     return version_urls[0]
             else:
                 return version_urls[0]
@@ -393,11 +409,13 @@ class Post:
                     continue
                 try:
                     url_candidates.append((
-                        int(self._context.head(version_url, allow_redirects=True).headers.get('Content-Length', 0)),
+                        int(self._context.head(version_url, allow_redirects=True).headers.get(
+                            'Content-Length', 0)),
                         version_url
                     ))
                 except (InstaloaderException, KeyError, IndexError) as err:
-                    self._context.error(f"Video URL candidate {idx+1}/{len(version_urls)} for {self}: {err}")
+                    self._context.error(
+                        f"Video URL candidate {idx+1}/{len(version_urls)} for {self}: {err}")
             if not url_candidates:
                 # All candidates fail: Fallback to default URL and handle errors later at the actual download attempt
                 return version_urls[0]
@@ -462,9 +480,11 @@ class Post:
         """
         def _postcommentanswer(node):
             return PostCommentAnswer(id=int(node['id']),
-                                     created_at_utc=datetime.utcfromtimestamp(node['created_at']),
+                                     created_at_utc=datetime.utcfromtimestamp(
+                                         node['created_at']),
                                      text=node['text'],
-                                     owner=Profile(self._context, node['owner']),
+                                     owner=Profile(
+                                         self._context, node['owner']),
                                      likes_count=node.get('edge_liked_by', {}).get('count', 0))
 
         def _postcommentanswers(node):
@@ -496,7 +516,8 @@ class Post:
             return []
 
         comment_edges = self._field('edge_media_to_comment', 'edges')
-        answers_count = sum([edge['node'].get('edge_threaded_comments', {}).get('count', 0) for edge in comment_edges])
+        answers_count = sum([edge['node'].get('edge_threaded_comments', {}).get(
+            'count', 0) for edge in comment_edges])
 
         if self.comments == len(comment_edges) + answers_count:
             # If the Post's metadata already contains all parent comments, don't do GraphQL requests to obtain them
@@ -518,7 +539,8 @@ class Post:
            Require being logged in (as required by Instagram).
         """
         if not self._context.is_logged_in:
-            raise LoginRequiredException("--login required to access likes of a post.")
+            raise LoginRequiredException(
+                "--login required to access likes of a post.")
         if self.likes == 0:
             # Avoid doing additional requests if there are no comments
             return
@@ -535,29 +557,32 @@ class Post:
             {'shortcode': self.shortcode},
             'https://www.instagram.com/p/{0}/'.format(self.shortcode),
         )
-	
-def get_likes_pp(self) -> Iterator[string]:
+
+    def get_likes_pp(self) -> Iterator[str]:
         """
         Iterate over all likes of the post. A :class:`Profile` instance of each likee is yielded.
 
         .. versionchanged:: 4.5.4
+
            Require being logged in (as required by Instagram).
         """
         if not self._context.is_logged_in:
-            raise LoginRequiredException("--login required to access likes of a post.")
+            raise LoginRequiredException(
+                "--login required to access likes of a post.")
         if self.likes == 0:
             # Avoid doing additional requests if there are no comments
             return
         likes_edges = self._field('edge_media_preview_like', 'edges')
         if self.likes == len(likes_edges):
             # If the Post's metadata already contains all likes, don't do GraphQL requests to obtain them
-            yield from (like['node']['profile_pic_url'] for like in likes_edges)
+            print("toto")
+            yield from (Profile(self._context, like['node']) for like in likes_edges)
             return
         yield from NodeIterator(
             self._context,
             '1cb6ec562846122743b61e492c85999f',
             lambda d: d['data']['shortcode_media']['edge_liked_by'],
-            lambda n: Profile(self._context, n),
+            lambda n: Toto(self._context, n),
             {'shortcode': self.shortcode},
             'https://www.instagram.com/p/{0}/'.format(self.shortcode),
         )
@@ -608,6 +633,12 @@ def get_likes_pp(self) -> Iterator[string]:
         return self._location
 
 
+class Toto:
+    def __init__(self, context: InstaloaderContext, node: Dict[str, Any]):
+        self._context = context
+        self._node = node
+
+
 class Profile:
     """
     An Instagram Profile.
@@ -635,6 +666,7 @@ class Profile:
 
     Also, this class implements == and is hashable.
     """
+
     def __init__(self, context: InstaloaderContext, node: Dict[str, Any]):
         assert 'username' in node
         self._context = context
@@ -658,7 +690,8 @@ class Profile:
         """
         # pylint:disable=protected-access
         profile = cls(context, {'username': username.lower()})
-        profile._obtain_metadata()  # to raise ProfileNotExistsException now in case username is invalid
+        # to raise ProfileNotExistsException now in case username is invalid
+        profile._obtain_metadata()
         return profile
 
     @classmethod
@@ -696,7 +729,8 @@ class Profile:
 
         .. versionadded:: 4.5.2"""
         if not context.is_logged_in:
-            raise LoginRequiredException("--login required to access own profile.")
+            raise LoginRequiredException(
+                "--login required to access own profile.")
         return cls(context, context.graphql_query("d6f4427fbe92d846298cf93df0b937d3", {})["data"]["user"])
 
     def _asdict(self):
@@ -713,18 +747,22 @@ class Profile:
     def _obtain_metadata(self):
         try:
             if not self._has_full_metadata:
-                metadata = self._context.get_json('{}/feed/'.format(self.username), params={})
+                metadata = self._context.get_json(
+                    '{}/feed/'.format(self.username), params={})
                 self._node = metadata['entry_data']['ProfilePage'][0]['graphql']['user']
                 self._has_full_metadata = True
         except (QueryReturnedNotFoundException, KeyError) as err:
             top_search_results = TopSearchResults(self._context, self.username)
-            similar_profiles = [profile.username for profile in top_search_results.get_profiles()]
+            similar_profiles = [
+                profile.username for profile in top_search_results.get_profiles()]
             if similar_profiles:
                 raise ProfileNotExistsException('Profile {} does not exist.\nThe most similar profile{}: {}.'
                                                 .format(self.username,
-                                                        's are' if len(similar_profiles) > 1 else ' is',
+                                                        's are' if len(
+                                                            similar_profiles) > 1 else ' is',
                                                         ', '.join(similar_profiles[0:5]))) from err
-            raise ProfileNotExistsException('Profile {} does not exist.'.format(self.username)) from err
+            raise ProfileNotExistsException(
+                'Profile {} does not exist.'.format(self.username)) from err
 
     def _metadata(self, *keys) -> Any:
         try:
@@ -744,9 +782,11 @@ class Profile:
         if not self._context.iphone_support:
             raise IPhoneSupportDisabledException("iPhone support is disabled.")
         if not self._context.is_logged_in:
-            raise LoginRequiredException("--login required to access iPhone profile info endpoint.")
+            raise LoginRequiredException(
+                "--login required to access iPhone profile info endpoint.")
         if not self._iphone_struct_:
-            data = self._context.get_iphone_json(path='api/v1/users/{}/info/'.format(self.userid), params={})
+            data = self._context.get_iphone_json(
+                path='api/v1/users/{}/info/'.format(self.userid), params={})
             self._iphone_struct_ = data['user']
         return self._iphone_struct_
 
@@ -889,7 +929,8 @@ class Profile:
             try:
                 return self._iphone_struct['hd_profile_pic_url_info']['url']
             except (InstaloaderException, KeyError) as err:
-                self._context.error('{} Unable to fetch high quality profile pic.'.format(err))
+                self._context.error(
+                    '{} Unable to fetch high quality profile pic.'.format(err))
                 return self._metadata("profile_pic_url_hd")
         else:
             return self._metadata("profile_pic_url_hd")
@@ -897,7 +938,7 @@ class Profile:
     def get_profile_pic_url(self) -> str:
         """.. deprecated:: 4.0.3
 
-	   Use :attr:`profile_pic_url`."""
+           Use :attr:`profile_pic_url`."""
         return self.profile_pic_url
 
     def get_posts(self) -> NodeIterator[Post]:
@@ -921,7 +962,8 @@ class Profile:
         :rtype: NodeIterator[Post]"""
 
         if self.username != self._context.username:
-            raise LoginRequiredException("--login={} required to get that profile's saved posts.".format(self.username))
+            raise LoginRequiredException(
+                "--login={} required to get that profile's saved posts.".format(self.username))
 
         return NodeIterator(
             self._context,
@@ -943,7 +985,8 @@ class Profile:
             self._context,
             'e31a871f7301132ceaab56507a66bbb7',
             lambda d: d['data']['user']['edge_user_to_photos_of_you'],
-            lambda n: Post(self._context, n, self if int(n['owner']['id']) == self.userid else None),
+            lambda n: Post(self._context, n, self if int(
+                n['owner']['id']) == self.userid else None),
             {'id': self.userid},
             'https://www.instagram.com/{0}/'.format(self.username),
         )
@@ -973,7 +1016,8 @@ class Profile:
         :rtype: NodeIterator[Profile]
         """
         if not self._context.is_logged_in:
-            raise LoginRequiredException("--login required to get a profile's followers.")
+            raise LoginRequiredException(
+                "--login required to get a profile's followers.")
         self._obtain_metadata()
         return NodeIterator(
             self._context,
@@ -992,7 +1036,8 @@ class Profile:
         :rtype: NodeIterator[Profile]
         """
         if not self._context.is_logged_in:
-            raise LoginRequiredException("--login required to get a profile's followees.")
+            raise LoginRequiredException(
+                "--login required to get a profile's followees.")
         self._obtain_metadata()
         return NodeIterator(
             self._context,
@@ -1011,11 +1056,13 @@ class Profile:
         .. versionadded:: 4.4
         """
         if not self._context.is_logged_in:
-            raise LoginRequiredException("--login required to get a profile's similar accounts.")
+            raise LoginRequiredException(
+                "--login required to get a profile's similar accounts.")
         self._obtain_metadata()
         yield from (Profile(self._context, edge["node"]) for edge in
                     self._context.graphql_query("ad99dd9d3646cc3c0dda65debcd266a7",
-                                                {"user_id": str(self.userid), "include_chaining": True},
+                                                {"user_id": str(
+                                                    self.userid), "include_chaining": True},
                                                 "https://www.instagram.com/{0}/"
                                                 .format(self.username))["data"]["user"]["edge_chaining"]["edges"])
 
@@ -1075,9 +1122,11 @@ class StoryItem:
         if not self._context.iphone_support:
             raise IPhoneSupportDisabledException("iPhone support is disabled.")
         if not self._context.is_logged_in:
-            raise LoginRequiredException("--login required to access iPhone media info endpoint.")
+            raise LoginRequiredException(
+                "--login required to access iPhone media info endpoint.")
         if not self._iphone_struct_:
-            data = self._context.get_iphone_json(path='api/v1/media/{}/info/'.format(self.mediaid), params={})
+            data = self._context.get_iphone_json(
+                path='api/v1/media/{}/info/'.format(self.mediaid), params={})
             self._iphone_struct_ = data['items'][0]
         return self._iphone_struct_
 
@@ -1085,7 +1134,8 @@ class StoryItem:
     def owner_profile(self) -> Profile:
         """:class:`Profile` instance of the story item's owner."""
         if not self._owner_profile:
-            self._owner_profile = Profile.from_id(self._context, self._node['owner']['id'])
+            self._owner_profile = Profile.from_id(
+                self._context, self._node['owner']['id'])
         assert self._owner_profile is not None
         return self._owner_profile
 
@@ -1138,7 +1188,8 @@ class StoryItem:
                 url = re.sub(r'([?&])se=\d+&?', r'\1', orig_url).rstrip('&')
                 return url
             except (InstaloaderException, KeyError, IndexError) as err:
-                self._context.error('{} Unable to fetch high quality image version of {}.'.format(err, self))
+                self._context.error(
+                    '{} Unable to fetch high quality image version of {}.'.format(err, self))
         return self._node['display_resources'][-1]['src']
 
     @property
@@ -1158,9 +1209,11 @@ class StoryItem:
             version_urls = [self._node['video_resources'][-1]['src']]
             if self._context.iphone_support and self._context.is_logged_in:
                 try:
-                    version_urls.extend(version['url'] for version in self._iphone_struct['video_versions'])
+                    version_urls.extend(
+                        version['url'] for version in self._iphone_struct['video_versions'])
                 except (InstaloaderException, KeyError, IndexError) as err:
-                    self._context.error(f"Unable to fetch high-quality video version of {self}: {err}")
+                    self._context.error(
+                        f"Unable to fetch high-quality video version of {self}: {err}")
                     return version_urls[0]
             else:
                 return version_urls[0]
@@ -1171,11 +1224,13 @@ class StoryItem:
                     continue
                 try:
                     url_candidates.append((
-                        int(self._context.head(version_url, allow_redirects=True).headers.get('Content-Length', 0)),
+                        int(self._context.head(version_url, allow_redirects=True).headers.get(
+                            'Content-Length', 0)),
                         version_url
                     ))
                 except (InstaloaderException, KeyError, IndexError) as err:
-                    self._context.error(f"Video URL candidate {idx+1}/{len(version_urls)} for {self}: {err}")
+                    self._context.error(
+                        f"Video URL candidate {idx+1}/{len(version_urls)} for {self}: {err}")
             if not url_candidates:
                 # All candidates fail: Fallback to default URL and handle errors later at the actual download attempt
                 return version_urls[0]
@@ -1231,7 +1286,8 @@ class Story:
         if not self._unique_id:
             id_list = [item.mediaid for item in self.get_items()]
             id_list.sort()
-            self._unique_id = str().join([str(self.owner_id)] + list(map(str, id_list)))
+            self._unique_id = str().join(
+                [str(self.owner_id)] + list(map(str, id_list)))
         return self._unique_id
 
     @property
@@ -1380,6 +1436,7 @@ class Hashtag:
 
     Also, this class implements == and is hashable.
     """
+
     def __init__(self, context: InstaloaderContext, node: Dict[str, Any]):
         assert "name" in node
         self._context = context
@@ -1497,13 +1554,15 @@ class Hashtag:
         conn = self._metadata("edge_hashtag_to_media")
         yield from (Post(self._context, edge["node"]) for edge in conn["edges"])
         while conn["page_info"]["has_next_page"]:
-            data = self._query({'__a': 1, 'max_id': conn["page_info"]["end_cursor"]})
+            data = self._query(
+                {'__a': 1, 'max_id': conn["page_info"]["end_cursor"]})
             conn = data["edge_hashtag_to_media"]
             yield from (Post(self._context, edge["node"]) for edge in conn["edges"])
 
     def get_all_posts(self) -> Iterator[Post]:
         """Yields all posts, i.e. all most recent posts and the top posts, in almost-chronological order."""
-        sorted_top_posts = iter(sorted(self.get_top_posts(), key=lambda p: p.date_utc, reverse=True))
+        sorted_top_posts = iter(
+            sorted(self.get_top_posts(), key=lambda p: p.date_utc, reverse=True))
         other_posts = self.get_posts()
         next_top = next(sorted_top_posts, None)
         next_other = next(other_posts, None)
@@ -1719,7 +1778,8 @@ def load_structure(context: InstaloaderContext, json_structure: dict) -> JsonExp
     elif 'shortcode' in json_structure:
         # Post JSON created with Instaloader v3
         return Post.from_shortcode(context, json_structure['shortcode'])
-    raise InvalidArgumentException("Passed json structure is not an Instaloader JSON")
+    raise InvalidArgumentException(
+        "Passed json structure is not an Instaloader JSON")
 
 
 def load_structure_from_file(context: InstaloaderContext, filename: str) -> JsonExportable:
