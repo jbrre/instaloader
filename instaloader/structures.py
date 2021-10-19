@@ -535,6 +535,32 @@ class Post:
             {'shortcode': self.shortcode},
             'https://www.instagram.com/p/{0}/'.format(self.shortcode),
         )
+	
+def get_likes_pp(self) -> Iterator[string]:
+        """
+        Iterate over all likes of the post. A :class:`Profile` instance of each likee is yielded.
+
+        .. versionchanged:: 4.5.4
+           Require being logged in (as required by Instagram).
+        """
+        if not self._context.is_logged_in:
+            raise LoginRequiredException("--login required to access likes of a post.")
+        if self.likes == 0:
+            # Avoid doing additional requests if there are no comments
+            return
+        likes_edges = self._field('edge_media_preview_like', 'edges')
+        if self.likes == len(likes_edges):
+            # If the Post's metadata already contains all likes, don't do GraphQL requests to obtain them
+            yield from (like['node']['profile_pic_url'] for like in likes_edges)
+            return
+        yield from NodeIterator(
+            self._context,
+            '1cb6ec562846122743b61e492c85999f',
+            lambda d: d['data']['shortcode_media']['edge_liked_by'],
+            lambda n: Profile(self._context, n),
+            {'shortcode': self.shortcode},
+            'https://www.instagram.com/p/{0}/'.format(self.shortcode),
+        )
 
     @property
     def is_sponsored(self) -> bool:
